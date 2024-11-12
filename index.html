@@ -15,16 +15,24 @@
             margin: 0;
             padding: 20px;
         }
-        h1, h2 {
+        h1 {
             font-size: 2em;
             color: #4285f4;
             margin-bottom: 20px;
         }
-                .add-timer {
-            font-size: 2em;
+        .add-timer, #voiceCommand {
+            font-size: 1.5em;
             color: #4285f4;
             cursor: pointer;
-            margin: 5px;
+            margin: 10px;
+            padding: 10px 20px;
+            border: 1px solid #4285f4;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+            transition: background-color 0.2s;
+        }
+        .add-timer:hover, #voiceCommand:hover {
+            background-color: #e0e0e0;
         }
         #connect {
             padding: 10px 20px;
@@ -125,11 +133,12 @@
         </div>
     </div>
 
-    <div class="add-timer" onclick="addTimer()">➕</div>
+    <div class="add-timer" onclick="addTimer()">➕ Add Timer</div>
+    <button id="voiceCommand">🎙️ Set Timer by Voice</button>
     <div class="container" id="timersContainer"></div>
 
-    <!-- Dance Music for Timer Alarm -->
-    <audio id="danceMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="auto"></audio>
+    <!-- Alarm Music for Timer -->
+    <audio id="alarmSound" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="auto"></audio>
 
     <script>
         // Bluetooth UUIDs and Messages
@@ -146,7 +155,6 @@
 
         document.getElementById('connect').addEventListener('click', async () => {
             try {
-                // Request device and connect
                 thermometerDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'iBBQ' }],
                     optionalServices: [SERVICE_UUID]
@@ -155,19 +163,14 @@
                 const server = await thermometerDevice.gatt.connect();
                 document.getElementById('status').innerText = "Status: Connected";
 
-                // Access the main service
                 const service = await server.getPrimaryService(SERVICE_UUID);
-
-                // Log in
                 const accountChar = await service.getCharacteristic(ACCOUNT_VERIFY_UUID);
                 await accountChar.writeValue(CREDENTIALS_MESSAGE);
 
-                // Enable real-time data
                 const settingsChar = await service.getCharacteristic(SETTINGS_DATA_UUID);
                 await settingsChar.writeValue(REALTIME_DATA_ENABLE_MESSAGE);
-                await settingsChar.writeValue(UNITS_CELSIUS_MESSAGE); // Set to Celsius
+                await settingsChar.writeValue(UNITS_CELSIUS_MESSAGE);
 
-                // Start notifications
                 const realTimeChar = await service.getCharacteristic(REALTIME_DATA_UUID);
                 await realTimeChar.startNotifications();
 
@@ -178,7 +181,6 @@
                         let temp = data.getUint16(i, true) / 10;
                         temps.push((temp !== 6553.5 && temp <= 500) ? `${temp} °C` : "--");
                     }
-
                     document.getElementById('channel1').querySelector('.temperature').innerText = temps[0] || "--";
                     document.getElementById('channel2').querySelector('.temperature').innerText = temps[1] || "--";
                     document.getElementById('channel3').querySelector('.temperature').innerText = temps[2] || "--";
@@ -192,16 +194,66 @@
             }
         });
 
-        // Timer Functions
-        function addTimer() {
-            const timerId = Date.now();
+        // Voice recognition setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = false;
 
+        document.getElementById('voiceCommand').addEventListener('click', () => {
+            recognition.start();
+            document.getElementById('status').innerText = "Listening for timer command...";
+        });
+
+        recognition.onresult = (event) => {
+            const command = event.results[0][0].transcript.toLowerCase();
+            document.getElementById('status').innerText = `Command received: ${command}`;
+
+            // Extract time and optional name
+            const timeMatch = command.match(/(\d+)\s?(seconds?|minutes?|hours?)/);
+            const nameMatch = command.match(/called\s(\w+)/);
+            let timerName = "Unnamed Timer"; // Default name if not specified
+
+            if (nameMatch) {
+                timerName = nameMatch[1]; // Set timer name if found
+            }
+
+            if (timeMatch) {
+                const timeValue = parseInt(timeMatch[1], 10);
+                const unit = timeMatch[2];
+                let timerDuration = 0;
+
+                if (unit.startsWith("second")) {
+                    timerDuration = timeValue;
+                } else if (unit.startsWith("minute")) {
+                    timerDuration = timeValue * 60;
+                } else if (unit.startsWith("hour")) {
+                    timerDuration = timeValue * 3600;
+                }
+
+                // Add and start a new timer with the specified duration and name
+                const timerId = addTimer(timerName);
+                window[`totalSeconds_${timerId}`] = timerDuration;
+                updateDisplay(timerId);
+                startTimer(timerId);
+            } else {
+                document.getElementById('status').innerText = "Please specify a valid time (e.g., 'Set timer for 5 minutes called Jeff').";
+            }
+        };
+
+        recognition.onerror = (event) => {
+            document.getElementById('status').innerText = `Error: ${event.error}`;
+        };
+
+        // Timer Functions
+        function addTimer(name = "Timer") {
+            const timerId = Date.now();
             const timerBox = document.createElement("div");
             timerBox.classList.add("box");
             timerBox.id = `timer-${timerId}`;
             timerBox.innerHTML = `
                 <div class="close-button" onclick="removeTimer(${timerId})">✖️</div>
-                <input type="text" class="title" placeholder="Enter Timer Title" id="timerTitle-${timerId}">
+                <input type="text" class="title" value="${name}" id="timerTitle-${timerId}" readonly>
                 <div class="temperature" id="timerDisplay-${timerId}">00:00:00</div>
                 <div class="controls">
                     <div class="button-group">
@@ -220,11 +272,14 @@
             `;
             document.getElementById("timersContainer").appendChild(timerBox);
 
+            // Initialize the timer variables
             window[`totalSeconds_${timerId}`] = 0;
             window[`isRunning_${timerId}`] = false;
             window[`hasAlarmPlayed_${timerId}`] = false;
-        }
 
+            return timerId;
+        }
+      
         function removeTimer(timerId) {
             const timerBox = document.getElementById(`timer-${timerId}`);
             clearInterval(window[`timerInterval_${timerId}`]);
@@ -244,8 +299,8 @@
 
         function startTimer(timerId) {
             if (!window[`isRunning_${timerId}`] && window[`totalSeconds_${timerId}`] > 0) {
-                const danceMusic = document.getElementById("danceMusic");
-                danceMusic.muted = false;
+                const alarmSound = document.getElementById("alarmSound");
+                alarmSound.muted = false;
                 window[`isRunning_${timerId}`] = true;
                 window[`timerInterval_${timerId}`] = setInterval(() => {
                     if (window[`totalSeconds_${timerId}`] > 0) {
@@ -255,8 +310,8 @@
                         clearInterval(window[`timerInterval_${timerId}`]);
                         window[`isRunning_${timerId}`] = false;
                         if (!window[`hasAlarmPlayed_${timerId}`]) {
-                            danceMusic.currentTime = 0;
-                            danceMusic.play();
+                            alarmSound.currentTime = 0;
+                            alarmSound.play();
                             window[`hasAlarmPlayed_${timerId}`] = true;
                         }
                     }
@@ -268,7 +323,7 @@
             if (window[`isRunning_${timerId}`]) {
                 clearInterval(window[`timerInterval_${timerId}`]);
                 window[`isRunning_${timerId}`] = false;
-                document.getElementById("danceMusic").pause();
+                document.getElementById("alarmSound").pause();
             }
         }
 
@@ -277,7 +332,7 @@
             window[`totalSeconds_${timerId}`] = 0;
             window[`isRunning_${timerId}`] = false;
             window[`hasAlarmPlayed_${timerId}`] = false;
-            document.getElementById("danceMusic").pause();
+            document.getElementById("alarmSound").pause();
             updateDisplay(timerId);
         }
 
