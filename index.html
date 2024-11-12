@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Monitor and Multi-Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        h1, h2 {
+            font-size: 2em;
+            color: #4285f4;
+            margin-bottom: 20px;
+        }
+                .add-timer {
+            font-size: 2em;
+            color: #4285f4;
+            cursor: pointer;
+            margin: 5px;
+        }
+        #connect {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #status {
+            margin: 10px;
+            font-size: 1.2em;
+            color: #666;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: white;
+            text-align: center;
+        }
+        .temperature {
+            font-size: 1.2em;
+            color: #333;
+        }
+        .controls {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+            justify-content: space-between;
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        button {
+            padding: 6px;
+            font-size: 1em;
+            color: white;
+            background-color: #4285f4;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+        .close-button {
+            align-self: flex-end;
+            cursor: pointer;
+            color: red;
+        }
+        input.title {
+            width: 80%;
+            padding: 5px;
+            font-size: 1em;
+            margin-bottom: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Temperature Timer</h1>
+    <button id="connect">Connect Thermometer</button>
+    <p id="status">Status: Disconnected</p>
+    <div class="container">
+        <div class="box" id="channel1">
+            <div class="title">Probe 1</div>
+            <div class="temperature">-- °C</div>
+        </div>
+        <div class="box" id="channel2">
+            <div class="title">Probe 2</div>
+            <div class="temperature">-- °C</div>
+        </div>
+        <div class="box" id="channel3">
+            <div class="title">Probe 3</div>
+            <div class="temperature">-- °C</div>
+        </div>
+        <div class="box" id="channel4">
+            <div class="title">Probe 4</div>
+            <div class="temperature">-- °C</div>
+        </div>
+    </div>
+
+    <div class="add-timer" onclick="addTimer()">➕</div>
+    <div class="container" id="timersContainer"></div>
+
+    <!-- Dance Music for Timer Alarm -->
+    <audio id="danceMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="auto"></audio>
+
+    <script>
+        // Bluetooth UUIDs and Messages
+        const SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
+        const REALTIME_DATA_UUID = "0000fff4-0000-1000-8000-00805f9b34fb";
+        const ACCOUNT_VERIFY_UUID = "0000fff2-0000-1000-8000-00805f9b34fb";
+        const SETTINGS_DATA_UUID = "0000fff5-0000-1000-8000-00805f9b34fb";
+
+        const CREDENTIALS_MESSAGE = new Uint8Array([0x21, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0xb8, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        const REALTIME_DATA_ENABLE_MESSAGE = new Uint8Array([0x0B, 0x01, 0x00, 0x00, 0x00, 0x00]);
+        const UNITS_CELSIUS_MESSAGE = new Uint8Array([0x02, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
+        let thermometerDevice;
+
+        document.getElementById('connect').addEventListener('click', async () => {
+            try {
+                // Request device and connect
+                thermometerDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'iBBQ' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                const server = await thermometerDevice.gatt.connect();
+                document.getElementById('status').innerText = "Status: Connected";
+
+                // Access the main service
+                const service = await server.getPrimaryService(SERVICE_UUID);
+
+                // Log in
+                const accountChar = await service.getCharacteristic(ACCOUNT_VERIFY_UUID);
+                await accountChar.writeValue(CREDENTIALS_MESSAGE);
+
+                // Enable real-time data
+                const settingsChar = await service.getCharacteristic(SETTINGS_DATA_UUID);
+                await settingsChar.writeValue(REALTIME_DATA_ENABLE_MESSAGE);
+                await settingsChar.writeValue(UNITS_CELSIUS_MESSAGE); // Set to Celsius
+
+                // Start notifications
+                const realTimeChar = await service.getCharacteristic(REALTIME_DATA_UUID);
+                await realTimeChar.startNotifications();
+
+                realTimeChar.addEventListener('characteristicvaluechanged', event => {
+                    const data = event.target.value;
+                    const temps = [];
+                    for (let i = 0; i < data.byteLength; i += 2) {
+                        let temp = data.getUint16(i, true) / 10;
+                        temps.push((temp !== 6553.5 && temp <= 500) ? `${temp} °C` : "--");
+                    }
+
+                    document.getElementById('channel1').querySelector('.temperature').innerText = temps[0] || "--";
+                    document.getElementById('channel2').querySelector('.temperature').innerText = temps[1] || "--";
+                    document.getElementById('channel3').querySelector('.temperature').innerText = temps[2] || "--";
+                    document.getElementById('channel4').querySelector('.temperature').innerText = temps[3] || "--";
+                });
+
+                document.getElementById('status').innerText = "Status: Monitoring...";
+            } catch (error) {
+                console.log(error);
+                document.getElementById('status').innerText = "Status: Failed to connect";
+            }
+        });
+
+        // Timer Functions
+        function addTimer() {
+            const timerId = Date.now();
+
+            const timerBox = document.createElement("div");
+            timerBox.classList.add("box");
+            timerBox.id = `timer-${timerId}`;
+            timerBox.innerHTML = `
+                <div class="close-button" onclick="removeTimer(${timerId})">✖️</div>
+                <input type="text" class="title" placeholder="Enter Timer Title" id="timerTitle-${timerId}">
+                <div class="temperature" id="timerDisplay-${timerId}">00:00:00</div>
+                <div class="controls">
+                    <div class="button-group">
+                        <button onclick="increaseTime(${timerId}, 1)">+1 sec</button>
+                        <button onclick="increaseTime(${timerId}, 10)">+10 sec</button>
+                        <button onclick="increaseTime(${timerId}, 60)">+1 min</button>
+                        <button onclick="increaseTime(${timerId}, 600)">+10 min</button>
+                        <button onclick="increaseTime(${timerId}, 3600)">+1 hour</button>
+                    </div>
+                    <div class="button-group">
+                        <button onclick="startTimer(${timerId})">Start</button>
+                        <button onclick="pauseTimer(${timerId})">Pause</button>
+                        <button onclick="resetTimer(${timerId})">Reset</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById("timersContainer").appendChild(timerBox);
+
+            window[`totalSeconds_${timerId}`] = 0;
+            window[`isRunning_${timerId}`] = false;
+            window[`hasAlarmPlayed_${timerId}`] = false;
+        }
+
+        function removeTimer(timerId) {
+            const timerBox = document.getElementById(`timer-${timerId}`);
+            clearInterval(window[`timerInterval_${timerId}`]);
+            if (timerBox) timerBox.remove();
+        }
+
+        function formatTime(seconds) {
+            const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(seconds % 60).padStart(2, '0');
+            return `${hours}:${minutes}:${secs}`;
+        }
+
+        function updateDisplay(timerId) {
+            document.getElementById(`timerDisplay-${timerId}`).innerText = formatTime(window[`totalSeconds_${timerId}`]);
+        }
+
+        function startTimer(timerId) {
+            if (!window[`isRunning_${timerId}`] && window[`totalSeconds_${timerId}`] > 0) {
+                const danceMusic = document.getElementById("danceMusic");
+                danceMusic.muted = false;
+                window[`isRunning_${timerId}`] = true;
+                window[`timerInterval_${timerId}`] = setInterval(() => {
+                    if (window[`totalSeconds_${timerId}`] > 0) {
+                        window[`totalSeconds_${timerId}`]--;
+                        updateDisplay(timerId);
+                    } else {
+                        clearInterval(window[`timerInterval_${timerId}`]);
+                        window[`isRunning_${timerId}`] = false;
+                        if (!window[`hasAlarmPlayed_${timerId}`]) {
+                            danceMusic.currentTime = 0;
+                            danceMusic.play();
+                            window[`hasAlarmPlayed_${timerId}`] = true;
+                        }
+                    }
+                }, 1000);
+            }
+        }
+
+        function pauseTimer(timerId) {
+            if (window[`isRunning_${timerId}`]) {
+                clearInterval(window[`timerInterval_${timerId}`]);
+                window[`isRunning_${timerId}`] = false;
+                document.getElementById("danceMusic").pause();
+            }
+        }
+
+        function resetTimer(timerId) {
+            clearInterval(window[`timerInterval_${timerId}`]);
+            window[`totalSeconds_${timerId}`] = 0;
+            window[`isRunning_${timerId}`] = false;
+            window[`hasAlarmPlayed_${timerId}`] = false;
+            document.getElementById("danceMusic").pause();
+            updateDisplay(timerId);
+        }
+
+        function increaseTime(timerId, seconds) {
+            window[`totalSeconds_${timerId}`] += seconds;
+            updateDisplay(timerId);
+        }
+    </script>
+</body>
+</html>
