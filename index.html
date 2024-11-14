@@ -34,6 +34,9 @@
         .add-timer:hover, #voiceCommand:hover {
             background-color: #e0e0e0;
         }
+        #voiceCommand.selected, .box.selected, .add-timer.selected {
+            background-color: #e0e0e0; /* Teal background for selected container */
+        }
         #connect {
             padding: 10px 20px;
             font-size: 16px;
@@ -53,9 +56,20 @@
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 10px;
             width: 100%;
-            max-width: 800px;
+            max-width: 700px;
         }
         .box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: white;
+            text-align: center;
+        }
+        .box2 {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -94,6 +108,9 @@
         button:hover {
             background-color: #357ae8;
         }
+        button.selected {
+            border: 3px solid black; /* White border for selected button */
+        }
         .close-button {
             align-self: flex-end;
             cursor: pointer;
@@ -108,39 +125,113 @@
             border-radius: 4px;
             text-align: center;
         }
+              .button-row {
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            margin-bottom: 20px; /* Space below the row */
+        }
     </style>
 </head>
 <body>
-    <h1>Temperature Timer</h1>
-    <button id="connect">Connect Thermometer</button>
+        <button id="connect">Connect Thermometer</button>
     <p id="status">Status: Disconnected</p>
-    <div class="container">
-        <div class="box" id="channel1">
+    <div class="container" id="probeContainer">
+        <div class="box2" id="channel1">
             <div class="title">Probe 1</div>
             <div class="temperature">-- °C</div>
         </div>
-        <div class="box" id="channel2">
+        <div class="box2" id="channel2">
             <div class="title">Probe 2</div>
             <div class="temperature">-- °C</div>
         </div>
-        <div class="box" id="channel3">
+        <div class="box2" id="channel3">
             <div class="title">Probe 3</div>
             <div class="temperature">-- °C</div>
         </div>
-        <div class="box" id="channel4">
+        <div class="box2" id="channel4">
             <div class="title">Probe 4</div>
             <div class="temperature">-- °C</div>
         </div>
     </div>
-
-    <div class="add-timer" onclick="addTimer()">➕ Add Timer</div>
-    <button id="voiceCommand">🎙️ Set Timer by Voice</button>
+  <br>
+      <div class="button-row">
+        <button id="voiceCommand" class="add-timer">🎙️ Set Timer by Voice</button>
+        <button id="addTimerButton" class="add-timer" onclick="addTimer()">➕ Add Timer</button>
+    </div>
     <div class="container" id="timersContainer"></div>
 
     <!-- Alarm Music for Timer -->
     <audio id="alarmSound" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="auto"></audio>
 
     <script>
+        // State variables for selection
+        let selectedContainerIndex = 0; // Start at the top of the selectable list
+        let selectedButtonIndex = 0; // For tracking button selection within a timer container
+
+        // Function to update selected container
+        function updateSelectedContainer() {
+            const containers = Array.from(document.querySelectorAll('#voiceCommand, #addTimerButton, .box'));
+            containers.forEach((container, index) => {
+                container.classList.toggle('selected', index === selectedContainerIndex);
+            });
+            selectedButtonIndex = 0; // Reset button selection when container changes
+        }
+
+    // Event listener for keyboard navigation and triggering voice command
+    document.addEventListener('keydown', (event) => {
+        const containers = Array.from(document.querySelectorAll('#voiceCommand, #addTimerButton, #timersContainer .box'));
+        const totalContainers = containers.length;
+
+        if (event.key === "]") {
+            selectedContainerIndex = (selectedContainerIndex + 1) % totalContainers;
+            updateSelectedContainer();
+        } else if (event.key === "[") {
+            selectedContainerIndex = (selectedContainerIndex - 1 + totalContainers) % totalContainers;
+            updateSelectedContainer();
+        } else if (event.key === "z" || event.key === "x") {
+            const selectedContainer = containers[selectedContainerIndex];
+            if (selectedContainer && selectedContainer.classList.contains("box")) {
+                const buttons = selectedContainer.querySelectorAll("button");
+                if (buttons.length > 0) {
+                    selectedButtonIndex = (selectedButtonIndex + (event.key === "x" ? 1 : -1) + buttons.length) % buttons.length;
+                    buttons.forEach((button, index) => button.classList.toggle("selected", index === selectedButtonIndex));
+                }
+            }
+        } else if (event.key === "Enter") {
+            const selectedContainer = containers[selectedContainerIndex];
+            if (selectedContainer.id === "voiceCommand") {
+                selectedContainer.click();
+            } else if (selectedContainer.id === "addTimerButton") {
+                selectedContainer.click();
+            } else if (selectedContainer && selectedContainer.classList.contains("box")) {
+                const buttons = selectedContainer.querySelectorAll("button");
+                if (buttons[selectedButtonIndex]) {
+                    buttons[selectedButtonIndex].click();
+                }
+            }
+        } else if (event.key.toLowerCase() === "v") {
+            // Trigger "Set Timer by Voice" when "V" is pressed
+            document.getElementById("voiceCommand").click();
+        
+        } else if (event.key.toLowerCase() === "c") {
+                // Close selected timer if "X" is pressed
+                const selectedContainer = containers[selectedContainerIndex];
+                if (selectedContainer && selectedContainer.classList.contains("box")) {
+                    selectedContainer.remove();
+                }
+            }
+    });
+
+        // Add a class to highlight selected buttons
+        document.addEventListener("click", (event) => {
+            if (event.target.matches(".box button")) {
+                Array.from(event.target.closest(".box").querySelectorAll("button")).forEach((button) => {
+                    button.classList.remove("selected");
+                });
+                event.target.classList.add("selected");
+            }
+        });
+
         // Bluetooth UUIDs and Messages
         const SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
         const REALTIME_DATA_UUID = "0000fff4-0000-1000-8000-00805f9b34fb";
@@ -194,7 +285,7 @@
             }
         });
 
-        // Voice recognition setup
+        // Voice recognition setup with flexible commands
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.lang = "en-US";
@@ -209,8 +300,8 @@
             const command = event.results[0][0].transcript.toLowerCase();
             document.getElementById('status').innerText = `Command received: ${command}`;
 
-            // Extract time and optional name
-            const timeMatch = command.match(/(\d+)\s?(seconds?|minutes?|hours?)/);
+            // Extract time and optional name with more flexible commands
+            const timeMatch = command.match(/(\d+)\s?(second|minute|hour)s?/);
             const nameMatch = command.match(/called\s(\w+)/);
             let timerName = "Unnamed Timer"; // Default name if not specified
 
@@ -223,11 +314,11 @@
                 const unit = timeMatch[2];
                 let timerDuration = 0;
 
-                if (unit.startsWith("second")) {
+                if (unit === "second") {
                     timerDuration = timeValue;
-                } else if (unit.startsWith("minute")) {
+                } else if (unit === "minute") {
                     timerDuration = timeValue * 60;
-                } else if (unit.startsWith("hour")) {
+                } else if (unit === "hour") {
                     timerDuration = timeValue * 3600;
                 }
 
@@ -237,7 +328,7 @@
                 updateDisplay(timerId);
                 startTimer(timerId);
             } else {
-                document.getElementById('status').innerText = "Please specify a valid time (e.g., 'Set timer for 5 minutes called Jeff').";
+                document.getElementById('status').innerText = "Please specify a valid time (e.g., 'Set a 5-minute timer called Jeff').";
             }
         };
 
@@ -245,7 +336,7 @@
             document.getElementById('status').innerText = `Error: ${event.error}`;
         };
 
-        // Timer Functions
+        // Timer Functions with Editable Title
         function addTimer(name = "Timer") {
             const timerId = Date.now();
             const timerBox = document.createElement("div");
@@ -253,7 +344,7 @@
             timerBox.id = `timer-${timerId}`;
             timerBox.innerHTML = `
                 <div class="close-button" onclick="removeTimer(${timerId})">✖️</div>
-                <input type="text" class="title" value="${name}" id="timerTitle-${timerId}" readonly>
+                <input type="text" class="title" value="${name}" id="timerTitle-${timerId}">
                 <div class="temperature" id="timerDisplay-${timerId}">00:00:00</div>
                 <div class="controls">
                     <div class="button-group">
@@ -279,7 +370,7 @@
 
             return timerId;
         }
-      
+
         function removeTimer(timerId) {
             const timerBox = document.getElementById(`timer-${timerId}`);
             clearInterval(window[`timerInterval_${timerId}`]);
@@ -340,6 +431,19 @@
             window[`totalSeconds_${timerId}`] += seconds;
             updateDisplay(timerId);
         }
+
+        // Function to turn off alarm sound with the spacebar
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                const alarmSound = document.getElementById("alarmSound");
+                if (!alarmSound.paused) {
+                    alarmSound.pause();
+                    alarmSound.currentTime = 0;  // Reset the sound to the beginning
+                    document.getElementById('status').innerText = "Alarm stopped.";
+                }
+            }
+        });
+ 
     </script>
 </body>
 </html>
