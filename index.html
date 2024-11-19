@@ -197,7 +197,7 @@
                     buttons.forEach((button, index) => button.classList.toggle("selected", index === selectedButtonIndex));
                 }
             }
-        } else if (event.key === "Enter") || (event.key === "ArrowLeft") {
+        } else if (event.key === "Enter" || event.key === "ArrowLeft") {
             const selectedContainer = containers[selectedContainerIndex];
             if (selectedContainer.id === "voiceCommand") {
                 selectedContainer.click();
