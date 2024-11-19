@@ -197,7 +197,7 @@
                     buttons.forEach((button, index) => button.classList.toggle("selected", index === selectedButtonIndex));
                 }
             }
-        } else if (event.key === "Enter") {
+        } else if (event.key === "Enter") || (event.key === "ArrowLeft") {
             const selectedContainer = containers[selectedContainerIndex];
             if (selectedContainer.id === "voiceCommand") {
                 selectedContainer.click();
@@ -434,7 +434,7 @@
 
         // Function to turn off alarm sound with the spacebar
         document.addEventListener('keydown', (event) => {
-            if (event.code === 'Space') {
+            if (event.code === 'ArrowRight') {
                 const alarmSound = document.getElementById("alarmSound");
                 if (!alarmSound.paused) {
                     alarmSound.pause();
