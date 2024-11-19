@@ -188,12 +188,12 @@
         } else if (event.key === "[") {
             selectedContainerIndex = (selectedContainerIndex - 1 + totalContainers) % totalContainers;
             updateSelectedContainer();
-        } else if (event.key === "z" || event.key === "x") {
+        } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
             const selectedContainer = containers[selectedContainerIndex];
             if (selectedContainer && selectedContainer.classList.contains("box")) {
                 const buttons = selectedContainer.querySelectorAll("button");
                 if (buttons.length > 0) {
-                    selectedButtonIndex = (selectedButtonIndex + (event.key === "x" ? 1 : -1) + buttons.length) % buttons.length;
+                    selectedButtonIndex = (selectedButtonIndex + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
                     buttons.forEach((button, index) => button.classList.toggle("selected", index === selectedButtonIndex));
                 }
             }
@@ -209,12 +209,12 @@
                     buttons[selectedButtonIndex].click();
                 }
             }
-        } else if (event.key.toLowerCase() === "v") {
+        } else if (event.key === "ArrowUp") {
             // Trigger "Set Timer by Voice" when "V" is pressed
             document.getElementById("voiceCommand").click();
         
-        } else if (event.key.toLowerCase() === "c") {
-                // Close selected timer if "X" is pressed
+        } else if (event.key === "ArrowDown") {
+                // Close selected timer if "ArrowDown" is pressed
                 const selectedContainer = containers[selectedContainerIndex];
                 if (selectedContainer && selectedContainer.classList.contains("box")) {
                     selectedContainer.remove();
