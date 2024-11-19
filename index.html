@@ -188,12 +188,12 @@
         } else if (event.key === "[") {
             selectedContainerIndex = (selectedContainerIndex - 1 + totalContainers) % totalContainers;
             updateSelectedContainer();
-        } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        } else if (event.key === "z" || event.key === "x") {
             const selectedContainer = containers[selectedContainerIndex];
             if (selectedContainer && selectedContainer.classList.contains("box")) {
                 const buttons = selectedContainer.querySelectorAll("button");
                 if (buttons.length > 0) {
-                    selectedButtonIndex = (selectedButtonIndex + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+                    selectedButtonIndex = (selectedButtonIndex + (event.key === "x" ? 1 : -1) + buttons.length) % buttons.length;
                     buttons.forEach((button, index) => button.classList.toggle("selected", index === selectedButtonIndex));
                 }
             }
