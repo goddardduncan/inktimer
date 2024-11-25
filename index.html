@@ -1,348 +1,552 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Temperature Monitor and Multi-Timer</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+      }
+      h1 {
+        font-size: 2em;
+        color: #4285f4;
+        margin-bottom: 20px;
+      }
+      .add-timer,
+      #voiceCommand {
+        font-size: 1.5em;
+        color: #4285f4;
+        cursor: pointer;
+        margin: 10px;
+        padding: 10px 20px;
+        border: 1px solid #4285f4;
+        border-radius: 5px;
+        background-color: #f5f5f5;
+        transition: background-color 0.2s;
+      }
+      .add-timer:hover,
+      #voiceCommand:hover {
+        background-color: #e0e0e0;
+      }
+      #voiceCommand.selected,
+      .box.selected,
+      .add-timer.selected {
+        background-color: #e0e0e0; /* Teal background for selected container */
+      }
+      #connect {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      #status {
+        margin: 10px;
+        font-size: 1.2em;
+        color: #666;
+      }
+      .container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+        width: 100%;
+        max-width: 700px;
+      }
+      .box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: white;
+        text-align: center;
+      }
+      .box2 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: white;
+        text-align: center;
+      }
+      .temperature {
+        font-size: 1.2em;
+        color: #333;
+      }
+      .controls {
+        display: flex;
+        gap: 5px;
+        width: 100%;
+        justify-content: space-between;
+      }
+      .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      button {
+        padding: 6px;
+        font-size: 1em;
+        color: white;
+        background-color: #4285f4;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        background-color: #357ae8;
+      }
+      button.selected {
+        border: 3px solid black; /* White border for selected button */
+      }
+      .close-button {
+        align-self: flex-end;
+        cursor: pointer;
+        color: red;
+      }
+      input.title {
+        width: 80%;
+        padding: 5px;
+        font-size: 1em;
+        margin-bottom: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        text-align: center;
+      }
+      .button-row {
+        display: flex;
+        gap: 10px; /* Space between buttons */
+        margin-bottom: 20px; /* Space below the row */
+      }
+      .target-input {
+        width: 70px;
+        text-align: center;
+        margin-top: 10px;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1em;
+      }
+      .target-flashing {
+        background-color: red !important;
+        color: white !important;
+        animation: flash 1s infinite;
+      }
+      @keyframes flash {
+        0% {
+          background-color: red;
+          color: white;
         }
-        h1 {
-            font-size: 2em;
-            color: #4285f4;
-            margin-bottom: 20px;
+        50% {
+          background-color: white;
+          color: red;
         }
-        .add-timer, #voiceCommand {
-            font-size: 1.5em;
-            color: #4285f4;
-            cursor: pointer;
-            margin: 10px;
-            padding: 10px 20px;
-            border: 1px solid #4285f4;
-            border-radius: 5px;
-            background-color: #f5f5f5;
-            transition: background-color 0.2s;
+        100% {
+          background-color: red;
+          color: white;
         }
-        .add-timer:hover, #voiceCommand:hover {
-            background-color: #e0e0e0;
-        }
-        #voiceCommand.selected, .box.selected, .add-timer.selected {
-            background-color: #e0e0e0; /* Teal background for selected container */
-        }
-        #connect {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #status {
-            margin: 10px;
-            font-size: 1.2em;
-            color: #666;
-        }
-        .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            width: 100%;
-            max-width: 700px;
-        }
-        .box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: white;
-            text-align: center;
-        }
-        .box2 {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: white;
-            text-align: center;
-        }
-        .temperature {
-            font-size: 1.2em;
-            color: #333;
-        }
-        .controls {
-            display: flex;
-            gap: 5px;
-            width: 100%;
-            justify-content: space-between;
-        }
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        button {
-            padding: 6px;
-            font-size: 1em;
-            color: white;
-            background-color: #4285f4;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        button:hover {
-            background-color: #357ae8;
-        }
-        button.selected {
-            border: 3px solid black; /* White border for selected button */
-        }
-        .close-button {
-            align-self: flex-end;
-            cursor: pointer;
-            color: red;
-        }
-        input.title {
-            width: 80%;
-            padding: 5px;
-            font-size: 1em;
-            margin-bottom: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            text-align: center;
-        }
-              .button-row {
-            display: flex;
-            gap: 10px; /* Space between buttons */
-            margin-bottom: 20px; /* Space below the row */
-        }
+      }
     </style>
-</head>
-<body>
-        <button id="connect">Connect Thermometer</button>
+  </head>
+  <body>
+    <button id="connect">Connect Thermometer</button>
     <p id="status">Status: Disconnected</p>
     <div class="container" id="probeContainer">
-        <div class="box2" id="channel1">
-            <div class="title">Probe 1</div>
-            <div class="temperature">-- °C</div>
+      <div class="box2" id="channel1">
+        <div class="title">Probe 1</div>
+        <div class="temperature">-- °C</div>
+        <div class="target-temp">
+          Target Temp:
+          <input
+            type="number"
+            id="targetTemp1"
+            class="target-input"
+            placeholder="Set°C"
+          />
         </div>
-        <div class="box2" id="channel2">
-            <div class="title">Probe 2</div>
-            <div class="temperature">-- °C</div>
+      </div>
+      <div class="box2" id="channel2">
+        <div class="title">Probe 2</div>
+        <div class="temperature">-- °C</div>
+        <div class="target-temp">
+          Target Temp:
+          <input
+            type="number"
+            id="targetTemp2"
+            class="target-input"
+            placeholder="Set°C"
+          />
         </div>
-        <div class="box2" id="channel3">
-            <div class="title">Probe 3</div>
-            <div class="temperature">-- °C</div>
+      </div>
+      <div class="box2" id="channel3">
+        <div class="title">Probe 3</div>
+        <div class="temperature">-- °C</div>
+        <div class="target-temp">
+          Target Temp:
+          <input
+            type="number"
+            id="targetTemp3"
+            class="target-input"
+            placeholder="Set°C"
+          />
         </div>
-        <div class="box2" id="channel4">
-            <div class="title">Probe 4</div>
-            <div class="temperature">-- °C</div>
+      </div>
+      <div class="box2" id="channel4">
+        <div class="title">Probe 4</div>
+        <div class="temperature">-- °C</div>
+        <div class="target-temp">
+          Target Temp:
+          <input
+            type="number"
+            id="targetTemp4"
+            class="target-input"
+            placeholder="Set°C"
+          />
         </div>
+      </div>
     </div>
-  <br>
-      <div class="button-row">
-        <button id="voiceCommand" class="add-timer">🎙️ Set Timer by Voice</button>
-        <button id="addTimerButton" class="add-timer" onclick="addTimer()">➕ Add Timer</button>
+    <br />
+    <div class="button-row">
+      <button id="voiceCommand" class="add-timer">🎙️ Set Timer by Voice</button>
+      <button id="addTimerButton" class="add-timer" onclick="addTimer()">
+        ➕ Add Timer
+      </button>
     </div>
     <div class="container" id="timersContainer"></div>
 
     <!-- Alarm Music for Timer -->
-    <audio id="alarmSound" src="Mines.mp3" preload="auto"></audio>
+    <audio
+      id="alarmSound"
+      src="https://goddardduncan.github.io/inktimer/Mines.mp3"
+      preload="auto"
+    ></audio>
 
     <script>
-        // State variables for selection
-        let selectedContainerIndex = 0; // Start at the top of the selectable list
-        let selectedButtonIndex = 0; // For tracking button selection within a timer container
+      // State variables for selection
+      let selectedContainerIndex = 0; // Start at the top of the selectable list
+      let selectedButtonIndex = 0; // For tracking button selection within a timer container
 
-        // Function to update selected container
-        function updateSelectedContainer() {
-            const containers = Array.from(document.querySelectorAll('#voiceCommand, #addTimerButton, .box'));
-            containers.forEach((container, index) => {
-                container.classList.toggle('selected', index === selectedContainerIndex);
-            });
-            selectedButtonIndex = 0; // Reset button selection when container changes
+      // Function to check temperatures against target
+      function checkTargetTemperatures() {
+        const probes = [1, 2, 3, 4]; // Assume 4 probes
+        const alarmSound = document.getElementById("alarmSound");
+        alarmSound.muted = false;
+
+        probes.forEach((probe) => {
+          const temperatureElement = document.querySelector(
+            `#channel${probe} .temperature`
+          );
+          const targetTempElement = document.getElementById(
+            `targetTemp${probe}`
+          );
+          const targetTempBox = targetTempElement.closest(".target-temp");
+
+          if (temperatureElement && targetTempElement) {
+            const currentTemp = parseFloat(temperatureElement.innerText);
+            const targetTemp = parseFloat(targetTempElement.value);
+
+            if (
+              !isNaN(currentTemp) &&
+              !isNaN(targetTemp) &&
+              currentTemp >= targetTemp
+            ) {
+              // Flash and sound the alarm
+              targetTempBox.classList.add("target-flashing");
+              if (alarmSound.paused) {
+                alarmSound.currentTime = 0;
+                alarmSound.play();
+              }
+            } else {
+              // Stop flashing
+              targetTempBox.classList.remove("target-flashing");
+            }
+          }
+        });
+      }
+      // Function to update selected container
+      function updateSelectedContainer() {
+        const containers = Array.from(
+          document.querySelectorAll("#voiceCommand, #addTimerButton, .box")
+        );
+        containers.forEach((container, index) => {
+          container.classList.toggle(
+            "selected",
+            index === selectedContainerIndex
+          );
+        });
+        selectedButtonIndex = 0; // Reset button selection when container changes
+      }
+
+      document.addEventListener("keydown", (event) => {
+        // Check if the user is currently focused on an input field
+        if (
+          document.activeElement.tagName === "INPUT" &&
+          document.activeElement.type === "text"
+        ) {
+          return; // Skip the keyboard shortcuts if typing in a text input
         }
 
-    // Event listener for keyboard navigation and triggering voice command
-    document.addEventListener('keydown', (event) => {
-        const containers = Array.from(document.querySelectorAll('#voiceCommand, #addTimerButton, #timersContainer .box'));
+        const containers = Array.from(
+          document.querySelectorAll(
+            "#voiceCommand, #addTimerButton, #timersContainer .box"
+          )
+        );
         const totalContainers = containers.length;
 
         if (event.key === "]") {
-            selectedContainerIndex = (selectedContainerIndex + 1) % totalContainers;
-            updateSelectedContainer();
+          selectedContainerIndex =
+            (selectedContainerIndex + 1) % totalContainers;
+          updateSelectedContainer();
         } else if (event.key === "[") {
-            selectedContainerIndex = (selectedContainerIndex - 1 + totalContainers) % totalContainers;
-            updateSelectedContainer();
+          selectedContainerIndex =
+            (selectedContainerIndex - 1 + totalContainers) % totalContainers;
+          updateSelectedContainer();
         } else if (event.key === "z" || event.key === "x") {
-            const selectedContainer = containers[selectedContainerIndex];
-            if (selectedContainer && selectedContainer.classList.contains("box")) {
-                const buttons = selectedContainer.querySelectorAll("button");
-                if (buttons.length > 0) {
-                    selectedButtonIndex = (selectedButtonIndex + (event.key === "x" ? 1 : -1) + buttons.length) % buttons.length;
-                    buttons.forEach((button, index) => button.classList.toggle("selected", index === selectedButtonIndex));
-                }
+          const selectedContainer = containers[selectedContainerIndex];
+          if (
+            selectedContainer &&
+            selectedContainer.classList.contains("box")
+          ) {
+            const buttons = selectedContainer.querySelectorAll("button");
+            if (buttons.length > 0) {
+              selectedButtonIndex =
+                (selectedButtonIndex +
+                  (event.key === "x" ? 1 : -1) +
+                  buttons.length) %
+                buttons.length;
+              buttons.forEach((button, index) =>
+                button.classList.toggle(
+                  "selected",
+                  index === selectedButtonIndex
+                )
+              );
             }
-        } else if (event.key === "Enter" || event.key === "ArrowLeft") {
-            const selectedContainer = containers[selectedContainerIndex];
-            if (selectedContainer.id === "voiceCommand") {
-                selectedContainer.click();
-            } else if (selectedContainer.id === "addTimerButton") {
-                selectedContainer.click();
-            } else if (selectedContainer && selectedContainer.classList.contains("box")) {
-                const buttons = selectedContainer.querySelectorAll("button");
-                if (buttons[selectedButtonIndex]) {
-                    buttons[selectedButtonIndex].click();
-                }
+          }
+        } else if (event.key === "Enter") {
+          const selectedContainer = containers[selectedContainerIndex];
+          if (selectedContainer.id === "voiceCommand") {
+            selectedContainer.click();
+          } else if (selectedContainer.id === "addTimerButton") {
+            selectedContainer.click();
+          } else if (
+            selectedContainer &&
+            selectedContainer.classList.contains("box")
+          ) {
+            const buttons = selectedContainer.querySelectorAll("button");
+            if (buttons[selectedButtonIndex]) {
+              buttons[selectedButtonIndex].click();
             }
-        } else if (event.key === "ArrowUp") {
-            // Trigger "Set Timer by Voice" when "V" is pressed
-            document.getElementById("voiceCommand").click();
-        
-        } else if (event.key === "ArrowDown") {
-                // Close selected timer if "ArrowDown" is pressed
-                const selectedContainer = containers[selectedContainerIndex];
-                if (selectedContainer && selectedContainer.classList.contains("box")) {
-                    selectedContainer.remove();
-                }
+          }
+        } else if (event.key.toLowerCase() === "v") {
+          // Trigger "Set Timer by Voice" when "V" is pressed
+          document.getElementById("voiceCommand").click();
+        } else if (event.key.toLowerCase() === "c") {
+          // Close selected timer if "C" is pressed
+          const selectedContainer = containers[selectedContainerIndex];
+          if (
+            selectedContainer &&
+            selectedContainer.classList.contains("box")
+          ) {
+            selectedContainer.remove();
+          }
+        } else if (event.code === "Space") {
+          // Turn off alarm and stop flashing
+          const alarmSound = document.getElementById("alarmSound");
+          if (!alarmSound.paused) {
+            alarmSound.pause();
+            alarmSound.currentTime = 0; // Reset sound
+            document
+              .querySelectorAll(".target-flashing")
+              .forEach((box) => box.classList.remove("target-flashing"));
+          }
+        }
+      });
+
+      // Stop alarm on clicking the flashing target box
+      document.addEventListener("click", (event) => {
+        if (event.target.closest(".target-flashing")) {
+          const alarmSound = document.getElementById("alarmSound");
+          if (!alarmSound.paused) {
+            alarmSound.pause();
+            alarmSound.currentTime = 0; // Reset sound
+            event.target
+              .closest(".target-flashing")
+              .classList.remove("target-flashing");
+          }
+        }
+      });
+
+      // Add a class to highlight selected buttons
+      document.addEventListener("click", (event) => {
+        if (event.target.matches(".box button")) {
+          Array.from(
+            event.target.closest(".box").querySelectorAll("button")
+          ).forEach((button) => {
+            button.classList.remove("selected");
+          });
+          event.target.classList.add("selected");
+        }
+      });
+
+      // Bluetooth UUIDs and Messages
+      const SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
+      const REALTIME_DATA_UUID = "0000fff4-0000-1000-8000-00805f9b34fb";
+      const ACCOUNT_VERIFY_UUID = "0000fff2-0000-1000-8000-00805f9b34fb";
+      const SETTINGS_DATA_UUID = "0000fff5-0000-1000-8000-00805f9b34fb";
+
+      const CREDENTIALS_MESSAGE = new Uint8Array([
+        0x21, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0xb8, 0x22, 0x00, 0x00,
+        0x00, 0x00, 0x00,
+      ]);
+      const REALTIME_DATA_ENABLE_MESSAGE = new Uint8Array([
+        0x0b, 0x01, 0x00, 0x00, 0x00, 0x00,
+      ]);
+      const UNITS_CELSIUS_MESSAGE = new Uint8Array([
+        0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
+      ]);
+
+      let thermometerDevice;
+
+      document.getElementById("connect").addEventListener("click", async () => {
+        try {
+          thermometerDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ name: "iBBQ" }],
+            optionalServices: [SERVICE_UUID],
+          });
+
+          const server = await thermometerDevice.gatt.connect();
+          document.getElementById("status").innerText = "Status: Connected";
+
+          const service = await server.getPrimaryService(SERVICE_UUID);
+          const accountChar = await service.getCharacteristic(
+            ACCOUNT_VERIFY_UUID
+          );
+          await accountChar.writeValue(CREDENTIALS_MESSAGE);
+
+          const settingsChar = await service.getCharacteristic(
+            SETTINGS_DATA_UUID
+          );
+          await settingsChar.writeValue(REALTIME_DATA_ENABLE_MESSAGE);
+          await settingsChar.writeValue(UNITS_CELSIUS_MESSAGE);
+
+          const realTimeChar = await service.getCharacteristic(
+            REALTIME_DATA_UUID
+          );
+          await realTimeChar.startNotifications();
+
+          realTimeChar.addEventListener(
+            "characteristicvaluechanged",
+            (event) => {
+              const data = event.target.value;
+              const temps = [];
+              for (let i = 0; i < data.byteLength; i += 2) {
+                let temp = data.getUint16(i, true) / 10;
+                temps.push(
+                  temp !== 6553.5 && temp <= 500 ? `${temp} °C` : "--"
+                );
+              }
+              document
+                .getElementById("channel1")
+                .querySelector(".temperature").innerText = temps[0] || "--";
+              document
+                .getElementById("channel2")
+                .querySelector(".temperature").innerText = temps[1] || "--";
+              document
+                .getElementById("channel3")
+                .querySelector(".temperature").innerText = temps[2] || "--";
+              document
+                .getElementById("channel4")
+                .querySelector(".temperature").innerText = temps[3] || "--";
             }
-    });
+          );
 
-        // Add a class to highlight selected buttons
-        document.addEventListener("click", (event) => {
-            if (event.target.matches(".box button")) {
-                Array.from(event.target.closest(".box").querySelectorAll("button")).forEach((button) => {
-                    button.classList.remove("selected");
-                });
-                event.target.classList.add("selected");
-            }
-        });
+          document.getElementById("status").innerText = "Status: Monitoring...";
+        } catch (error) {
+          console.log(error);
+          document.getElementById("status").innerText =
+            "Status: Failed to connect";
+        }
+      });
 
-        // Bluetooth UUIDs and Messages
-        const SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
-        const REALTIME_DATA_UUID = "0000fff4-0000-1000-8000-00805f9b34fb";
-        const ACCOUNT_VERIFY_UUID = "0000fff2-0000-1000-8000-00805f9b34fb";
-        const SETTINGS_DATA_UUID = "0000fff5-0000-1000-8000-00805f9b34fb";
+      // Voice recognition setup with flexible commands
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
 
-        const CREDENTIALS_MESSAGE = new Uint8Array([0x21, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0xb8, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00]);
-        const REALTIME_DATA_ENABLE_MESSAGE = new Uint8Array([0x0B, 0x01, 0x00, 0x00, 0x00, 0x00]);
-        const UNITS_CELSIUS_MESSAGE = new Uint8Array([0x02, 0x00, 0x00, 0x00, 0x00, 0x00]);
+      document.getElementById("voiceCommand").addEventListener("click", () => {
+        recognition.start();
+        document.getElementById("status").innerText =
+          "Listening for timer command...";
+      });
 
-        let thermometerDevice;
+      recognition.onresult = (event) => {
+        const command = event.results[0][0].transcript.toLowerCase();
+        document.getElementById(
+          "status"
+        ).innerText = `Command received: ${command}`;
 
-        document.getElementById('connect').addEventListener('click', async () => {
-            try {
-                thermometerDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'iBBQ' }],
-                    optionalServices: [SERVICE_UUID]
-                });
+        // Extract time and optional name with more flexible commands
+        const timeMatch = command.match(/(\d+)\s?(second|minute|hour)s?/);
+        const nameMatch = command.match(/called\s(\w+)/);
+        let timerName = "Unnamed Timer"; // Default name if not specified
 
-                const server = await thermometerDevice.gatt.connect();
-                document.getElementById('status').innerText = "Status: Connected";
+        if (nameMatch) {
+          timerName = nameMatch[1]; // Set timer name if found
+        }
 
-                const service = await server.getPrimaryService(SERVICE_UUID);
-                const accountChar = await service.getCharacteristic(ACCOUNT_VERIFY_UUID);
-                await accountChar.writeValue(CREDENTIALS_MESSAGE);
+        if (timeMatch) {
+          const timeValue = parseInt(timeMatch[1], 10);
+          const unit = timeMatch[2];
+          let timerDuration = 0;
 
-                const settingsChar = await service.getCharacteristic(SETTINGS_DATA_UUID);
-                await settingsChar.writeValue(REALTIME_DATA_ENABLE_MESSAGE);
-                await settingsChar.writeValue(UNITS_CELSIUS_MESSAGE);
+          if (unit === "second") {
+            timerDuration = timeValue;
+          } else if (unit === "minute") {
+            timerDuration = timeValue * 60;
+          } else if (unit === "hour") {
+            timerDuration = timeValue * 3600;
+          }
 
-                const realTimeChar = await service.getCharacteristic(REALTIME_DATA_UUID);
-                await realTimeChar.startNotifications();
+          // Add and start a new timer with the specified duration and name
+          const timerId = addTimer(timerName);
+          window[`totalSeconds_${timerId}`] = timerDuration;
+          updateDisplay(timerId);
+          startTimer(timerId);
+        } else {
+          document.getElementById("status").innerText =
+            "Please specify a valid time (e.g., 'Set a 5-minute timer called Jeff').";
+        }
+      };
 
-                realTimeChar.addEventListener('characteristicvaluechanged', event => {
-                    const data = event.target.value;
-                    const temps = [];
-                    for (let i = 0; i < data.byteLength; i += 2) {
-                        let temp = data.getUint16(i, true) / 10;
-                        temps.push((temp !== 6553.5 && temp <= 500) ? `${temp} °C` : "--");
-                    }
-                    document.getElementById('channel1').querySelector('.temperature').innerText = temps[0] || "--";
-                    document.getElementById('channel2').querySelector('.temperature').innerText = temps[1] || "--";
-                    document.getElementById('channel3').querySelector('.temperature').innerText = temps[2] || "--";
-                    document.getElementById('channel4').querySelector('.temperature').innerText = temps[3] || "--";
-                });
+      recognition.onerror = (event) => {
+        document.getElementById("status").innerText = `Error: ${event.error}`;
+      };
 
-                document.getElementById('status').innerText = "Status: Monitoring...";
-            } catch (error) {
-                console.log(error);
-                document.getElementById('status').innerText = "Status: Failed to connect";
-            }
-        });
-
-        // Voice recognition setup with flexible commands
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = "en-US";
-        recognition.interimResults = false;
-
-        document.getElementById('voiceCommand').addEventListener('click', () => {
-            recognition.start();
-            document.getElementById('status').innerText = "Listening for timer command...";
-        });
-
-        recognition.onresult = (event) => {
-            const command = event.results[0][0].transcript.toLowerCase();
-            document.getElementById('status').innerText = `Command received: ${command}`;
-
-            // Extract time and optional name with more flexible commands
-            const timeMatch = command.match(/(\d+)\s?(second|minute|hour)s?/);
-            const nameMatch = command.match(/called\s(\w+)/);
-            let timerName = "Unnamed Timer"; // Default name if not specified
-
-            if (nameMatch) {
-                timerName = nameMatch[1]; // Set timer name if found
-            }
-
-            if (timeMatch) {
-                const timeValue = parseInt(timeMatch[1], 10);
-                const unit = timeMatch[2];
-                let timerDuration = 0;
-
-                if (unit === "second") {
-                    timerDuration = timeValue;
-                } else if (unit === "minute") {
-                    timerDuration = timeValue * 60;
-                } else if (unit === "hour") {
-                    timerDuration = timeValue * 3600;
-                }
-
-                // Add and start a new timer with the specified duration and name
-                const timerId = addTimer(timerName);
-                window[`totalSeconds_${timerId}`] = timerDuration;
-                updateDisplay(timerId);
-                startTimer(timerId);
-            } else {
-                document.getElementById('status').innerText = "Please specify a valid time (e.g., 'Set a 5-minute timer called Jeff').";
-            }
-        };
-
-        recognition.onerror = (event) => {
-            document.getElementById('status').innerText = `Error: ${event.error}`;
-        };
-
-        // Timer Functions with Editable Title
-        function addTimer(name = "Timer") {
-            const timerId = Date.now();
-            const timerBox = document.createElement("div");
-            timerBox.classList.add("box");
-            timerBox.id = `timer-${timerId}`;
-            timerBox.innerHTML = `
+      // Timer Functions with Editable Title
+      function addTimer(name = "Timer") {
+        const timerId = Date.now();
+        const timerBox = document.createElement("div");
+        timerBox.classList.add("box");
+        timerBox.id = `timer-${timerId}`;
+        timerBox.innerHTML = `
                 <div class="close-button" onclick="removeTimer(${timerId})">✖️</div>
                 <input type="text" class="title" value="${name}" id="timerTitle-${timerId}">
                 <div class="temperature" id="timerDisplay-${timerId}">00:00:00</div>
@@ -361,89 +565,96 @@
                     </div>
                 </div>
             `;
-            document.getElementById("timersContainer").appendChild(timerBox);
+        document.getElementById("timersContainer").appendChild(timerBox);
 
-            // Initialize the timer variables
-            window[`totalSeconds_${timerId}`] = 0;
-            window[`isRunning_${timerId}`] = false;
-            window[`hasAlarmPlayed_${timerId}`] = false;
+        // Initialize the timer variables
+        window[`totalSeconds_${timerId}`] = 0;
+        window[`isRunning_${timerId}`] = false;
+        window[`hasAlarmPlayed_${timerId}`] = false;
 
-            return timerId;
-        }
+        return timerId;
+      }
 
-        function removeTimer(timerId) {
-            const timerBox = document.getElementById(`timer-${timerId}`);
-            clearInterval(window[`timerInterval_${timerId}`]);
-            if (timerBox) timerBox.remove();
-        }
+      function removeTimer(timerId) {
+        const timerBox = document.getElementById(`timer-${timerId}`);
+        clearInterval(window[`timerInterval_${timerId}`]);
+        if (timerBox) timerBox.remove();
+      }
 
-        function formatTime(seconds) {
-            const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
-            const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-            const secs = String(seconds % 60).padStart(2, '0');
-            return `${hours}:${minutes}:${secs}`;
-        }
+      function formatTime(seconds) {
+        const hours = String(Math.floor(seconds / 3600)).padStart(2, "0");
+        const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(
+          2,
+          "0"
+        );
+        const secs = String(seconds % 60).padStart(2, "0");
+        return `${hours}:${minutes}:${secs}`;
+      }
 
-        function updateDisplay(timerId) {
-            document.getElementById(`timerDisplay-${timerId}`).innerText = formatTime(window[`totalSeconds_${timerId}`]);
-        }
+      function updateDisplay(timerId) {
+        document.getElementById(`timerDisplay-${timerId}`).innerText =
+          formatTime(window[`totalSeconds_${timerId}`]);
+      }
 
-        function startTimer(timerId) {
-            if (!window[`isRunning_${timerId}`] && window[`totalSeconds_${timerId}`] > 0) {
-                const alarmSound = document.getElementById("alarmSound");
-                alarmSound.muted = false;
-                window[`isRunning_${timerId}`] = true;
-                window[`timerInterval_${timerId}`] = setInterval(() => {
-                    if (window[`totalSeconds_${timerId}`] > 0) {
-                        window[`totalSeconds_${timerId}`]--;
-                        updateDisplay(timerId);
-                    } else {
-                        clearInterval(window[`timerInterval_${timerId}`]);
-                        window[`isRunning_${timerId}`] = false;
-                        if (!window[`hasAlarmPlayed_${timerId}`]) {
-                            alarmSound.currentTime = 0;
-                            alarmSound.play();
-                            window[`hasAlarmPlayed_${timerId}`] = true;
-                        }
-                    }
-                }, 1000);
+      function startTimer(timerId) {
+        if (
+          !window[`isRunning_${timerId}`] &&
+          window[`totalSeconds_${timerId}`] > 0
+        ) {
+          const alarmSound = document.getElementById("alarmSound");
+          alarmSound.muted = false;
+          window[`isRunning_${timerId}`] = true;
+          window[`timerInterval_${timerId}`] = setInterval(() => {
+            if (window[`totalSeconds_${timerId}`] > 0) {
+              window[`totalSeconds_${timerId}`]--;
+              updateDisplay(timerId);
+            } else {
+              clearInterval(window[`timerInterval_${timerId}`]);
+              window[`isRunning_${timerId}`] = false;
+              if (!window[`hasAlarmPlayed_${timerId}`]) {
+                alarmSound.currentTime = 0;
+                alarmSound.play();
+                window[`hasAlarmPlayed_${timerId}`] = true;
+              }
             }
+          }, 1000);
         }
+      }
 
-        function pauseTimer(timerId) {
-            if (window[`isRunning_${timerId}`]) {
-                clearInterval(window[`timerInterval_${timerId}`]);
-                window[`isRunning_${timerId}`] = false;
-                document.getElementById("alarmSound").pause();
-            }
+      function pauseTimer(timerId) {
+        if (window[`isRunning_${timerId}`]) {
+          clearInterval(window[`timerInterval_${timerId}`]);
+          window[`isRunning_${timerId}`] = false;
+          document.getElementById("alarmSound").pause();
         }
+      }
 
-        function resetTimer(timerId) {
-            clearInterval(window[`timerInterval_${timerId}`]);
-            window[`totalSeconds_${timerId}`] = 0;
-            window[`isRunning_${timerId}`] = false;
-            window[`hasAlarmPlayed_${timerId}`] = false;
-            document.getElementById("alarmSound").pause();
-            updateDisplay(timerId);
+      function resetTimer(timerId) {
+        clearInterval(window[`timerInterval_${timerId}`]);
+        window[`totalSeconds_${timerId}`] = 0;
+        window[`isRunning_${timerId}`] = false;
+        window[`hasAlarmPlayed_${timerId}`] = false;
+        document.getElementById("alarmSound").pause();
+        updateDisplay(timerId);
+      }
+
+      function increaseTime(timerId, seconds) {
+        window[`totalSeconds_${timerId}`] += seconds;
+        updateDisplay(timerId);
+      }
+      // Call checkTargetTemperatures regularly
+      setInterval(checkTargetTemperatures, 1000);
+      // Function to turn off alarm sound with the spacebar
+      document.addEventListener("keydown", (event) => {
+        if (event.code === "Space") {
+          const alarmSound = document.getElementById("alarmSound");
+          if (!alarmSound.paused) {
+            alarmSound.pause();
+            alarmSound.currentTime = 0; // Reset the sound to the beginning
+            document.getElementById("status").innerText = "Alarm stopped.";
+          }
         }
-
-        function increaseTime(timerId, seconds) {
-            window[`totalSeconds_${timerId}`] += seconds;
-            updateDisplay(timerId);
-        }
-
-        // Function to turn off alarm sound with the spacebar
-        document.addEventListener('keydown', (event) => {
-            if (event.code === 'ArrowRight') {
-                const alarmSound = document.getElementById("alarmSound");
-                if (!alarmSound.paused) {
-                    alarmSound.pause();
-                    alarmSound.currentTime = 0;  // Reset the sound to the beginning
-                    document.getElementById('status').innerText = "Alarm stopped.";
-                }
-            }
-        });
- 
+      });
     </script>
-</body>
+  </body>
 </html>
