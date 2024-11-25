@@ -271,7 +271,7 @@
             // Toggle mute state
             isProbeMuted[probe] = !isProbeMuted[probe];
             const button = document.getElementById(`muteProbe${probe}`);
-            button.textContent = isProbeMuted[probe] ? "🔇 Unmute" : "🔊 Mute";
+            button.textContent = isProbeMuted[probe] ? "🔇" : "🔊";
 
             // Immediately stop alarm if it's playing
             const alarmSound = document.getElementById("alarmSound");
