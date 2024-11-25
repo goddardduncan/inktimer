@@ -143,6 +143,20 @@
         border-radius: 4px;
         font-size: 1em;
       }
+      .mute-button {
+        padding: 5px;
+        font-size: 0.9em;
+        color: black;
+        background-color: #ffffff; /* Red color for mute button */
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+
+      .mute-button:hover {
+        background-color: #d32f2f;
+      }
       .target-flashing {
         background-color: red !important;
         color: white !important;
@@ -179,6 +193,7 @@
             class="target-input"
             placeholder="Set°C"
           />
+          <button class="mute-button" id="muteProbe1">🔊</button>
         </div>
       </div>
       <div class="box2" id="channel2">
@@ -192,6 +207,7 @@
             class="target-input"
             placeholder="Set°C"
           />
+          <button class="mute-button" id="muteProbe2">🔊</button>
         </div>
       </div>
       <div class="box2" id="channel3">
@@ -205,6 +221,7 @@
             class="target-input"
             placeholder="Set°C"
           />
+          <button class="mute-button" id="muteProbe3">🔊</button>
         </div>
       </div>
       <div class="box2" id="channel4">
@@ -218,6 +235,7 @@
             class="target-input"
             placeholder="Set°C"
           />
+          <button class="mute-button" id="muteProbe4">🔊</button>
         </div>
       </div>
     </div>
@@ -242,11 +260,40 @@
       let selectedContainerIndex = 0; // Start at the top of the selectable list
       let selectedButtonIndex = 0; // For tracking button selection within a timer container
 
-      // Function to check temperatures against target
+      // Mute state for each probe
+      const isProbeMuted = { 1: false, 2: false, 3: false, 4: false };
+
+      // Add click event listeners for mute buttons
+      [1, 2, 3, 4].forEach((probe) => {
+        document
+          .getElementById(`muteProbe${probe}`)
+          .addEventListener("click", () => {
+            // Toggle mute state
+            isProbeMuted[probe] = !isProbeMuted[probe];
+            const button = document.getElementById(`muteProbe${probe}`);
+            button.textContent = isProbeMuted[probe] ? "🔊 Unmute" : "🔇 Mute";
+
+            // Immediately stop alarm if it's playing
+            const alarmSound = document.getElementById("alarmSound");
+            if (alarmSound && !alarmSound.paused) {
+              alarmSound.pause();
+              alarmSound.currentTime = 0; // Reset the alarm sound
+            }
+
+            // Remove flashing for the muted probe
+            const targetTempBox = document.querySelector(
+              `#channel${probe} .target-temp`
+            );
+            if (targetTempBox) {
+              targetTempBox.classList.remove("target-flashing");
+            }
+          });
+      });
+
+      // Update the checkTargetTemperatures function
       function checkTargetTemperatures() {
         const probes = [1, 2, 3, 4]; // Assume 4 probes
         const alarmSound = document.getElementById("alarmSound");
-        alarmSound.muted = false;
 
         probes.forEach((probe) => {
           const temperatureElement = document.querySelector(
@@ -266,11 +313,13 @@
               !isNaN(targetTemp) &&
               currentTemp >= targetTemp
             ) {
-              // Flash and sound the alarm
-              targetTempBox.classList.add("target-flashing");
-              if (alarmSound.paused) {
-                alarmSound.currentTime = 0;
-                alarmSound.play();
+              // Only sound alarm and flash if not muted
+              if (!isProbeMuted[probe]) {
+                targetTempBox.classList.add("target-flashing");
+                if (alarmSound.paused) {
+                  alarmSound.currentTime = 0;
+                  alarmSound.play();
+                }
               }
             } else {
               // Stop flashing
