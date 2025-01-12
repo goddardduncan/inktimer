@@ -546,44 +546,42 @@
           "Listening for timer command...";
       });
 
-      recognition.onresult = (event) => {
-        const command = event.results[0][0].transcript.toLowerCase();
-        document.getElementById(
-          "status"
-        ).innerText = `Command received: ${command}`;
+recognition.onresult = (event) => {
+  const command = event.results[0][0].transcript.toLowerCase();
+  document.getElementById("status").innerText = `Command received: ${command}`;
 
-        // Extract time and optional name with more flexible commands
-        const timeMatch = command.match(/(\d+)\s?(second|minute|hour)s?/);
-        const nameMatch = command.match(/called\s(\w+)/);
-        let timerName = "Unnamed Timer"; // Default name if not specified
+  // Extract time and unit
+  const timeMatch = command.match(/(?:set\s*a\s*timer\s*for\s*|)(\d+)\s?(second|minute|hour)s?\b/);
+  const nameMatch = command.match(/called\s(.+)/);
+  let timerName = "Unnamed Timer"; // Default name
 
-        if (nameMatch) {
-          timerName = nameMatch[1]; // Set timer name if found
-        }
+  if (nameMatch) {
+    timerName = nameMatch[1].trim(); // Capture multi-word names
+  }
 
-        if (timeMatch) {
-          const timeValue = parseInt(timeMatch[1], 10);
-          const unit = timeMatch[2];
-          let timerDuration = 0;
+  if (timeMatch) {
+    const timeValue = parseInt(timeMatch[1], 10);
+    const unit = timeMatch[2];
+    let timerDuration = 0;
 
-          if (unit === "second") {
-            timerDuration = timeValue;
-          } else if (unit === "minute") {
-            timerDuration = timeValue * 60;
-          } else if (unit === "hour") {
-            timerDuration = timeValue * 3600;
-          }
+    if (unit === "second") {
+      timerDuration = timeValue;
+    } else if (unit === "minute") {
+      timerDuration = timeValue * 60;
+    } else if (unit === "hour") {
+      timerDuration = timeValue * 3600;
+    }
 
-          // Add and start a new timer with the specified duration and name
-          const timerId = addTimer(timerName);
-          window[`totalSeconds_${timerId}`] = timerDuration;
-          updateDisplay(timerId);
-          startTimer(timerId);
-        } else {
-          document.getElementById("status").innerText =
-            "Please specify a valid time (e.g., 'Set a 5-minute timer called Jeff').";
-        }
-      };
+    // Add and start a new timer
+    const timerId = addTimer(timerName);
+    window[`totalSeconds_${timerId}`] = timerDuration;
+    updateDisplay(timerId);
+    startTimer(timerId);
+  } else {
+    document.getElementById("status").innerText =
+      "Please specify a valid time (e.g., 'Set a 5-minute timer called Jeff').";
+  }
+};
 
       recognition.onerror = (event) => {
         document.getElementById("status").innerText = `Error: ${event.error}`;
